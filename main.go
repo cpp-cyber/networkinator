@@ -3,12 +3,19 @@ package main
 import (
 	"networkinator/models"
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
+    "github.com/gorilla/websocket"
 )
 
+type Message struct {
+    Host models.Host
+    Connection models.Connection
+}
+
 var HostCount int
+
+var clients = make(map[*websocket.Conn]bool)
 
 func main() {
 
@@ -30,9 +37,5 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	if os.Getenv("USE_HTTPS") == "true" {
-		log.Fatalln(router.RunTLS(":443", os.Getenv("CERT_PATH"), os.Getenv("KEY_PATH")))
-	} else {
-		log.Fatalln(router.Run(":80"))
-	}
+    log.Fatalln(router.Run(":80"))
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"networkinator/models"
 	"net/http"
+	"networkinator/models"
 	"strconv"
     "fmt"
 
@@ -10,10 +10,6 @@ import (
 )
 
 func GetHosts(c *gin.Context) {
-    filter := c.Request.URL.Query().Get("hostname")
-    if filter == "" {
-        filter = "%"
-    }
 
 	db, err := connectToSQLite()
 	if err != nil {
@@ -21,15 +17,15 @@ func GetHosts(c *gin.Context) {
 		return
 	}
 
-	hosts, err := getHostsEntries(db, filter)
+	hosts, err := getHostsEntries(db)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-    
+
 	hostMap := make(map[int]string)
 	for _, host := range hosts {
-        hostMap[host.ID] = host.IP + "," + host.Hostname
+		hostMap[host.ID] = host.IP
 	}
 
 	c.JSON(http.StatusOK, hostMap)
@@ -48,9 +44,9 @@ func GetConnections(c *gin.Context) {
 		return
 	}
 
-	connectionMap := make(map[string][]int)
+	connectionMap := make(map[string][]string)
 	for _, connection := range connections {
-		connectionMap[connection.ID] = []int{connection.Src, connection.Dst, connection.Port}
+		connectionMap[connection.ID] = []string{connection.Src, connection.Dst, strconv.Itoa(connection.Port)}
 	}
 
 	c.JSON(http.StatusOK, connectionMap)
@@ -64,19 +60,26 @@ func AddHost(c *gin.Context) {
 	}
 
 	ip := jsonData.IP
-    hostname := jsonData.Hostname
-
 	db, err := connectToSQLite()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	err = createHost(db, ip, hostname)
+	err = createHost(db, ip)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+    for client := range clients {
+        err := client.WriteJSON(jsonData)
+        if err != nil {
+            fmt.Println(err)
+            client.Close()
+            delete(clients, client)
+        }
+    }
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
@@ -91,7 +94,6 @@ func AddConnection(c *gin.Context) {
 	src := jsonData["Src"].(string)
 	dst := jsonData["Dst"].(string)
 	port := jsonData["Port"].(string)
-    hostname := jsonData["Hostname"].(string)
 
 	portInt, err := strconv.Atoi(port)
 	if err != nil || portInt < 0 || portInt > 65535 {
@@ -110,31 +112,36 @@ func AddConnection(c *gin.Context) {
 
 	tx := db.First(&srcHost, "IP = ?", src)
 	if tx.Error != nil {
-		createHost(db, src, hostname)
+		createHost(db, src)
 		db.First(&srcHost, "IP = ?", src)
-	} else if srcHost.Hostname == "" {
-        fmt.Println("Updating hostname" + hostname)
-        updateHost(db, src, hostname)
-    }
+	}
 
 	tx = db.First(&dstHost, "IP = ?", dst)
 	if tx.Error != nil {
-		createHost(db, dst, "")
+		createHost(db, dst)
 		db.First(&dstHost, "IP = ?", dst)
 	}
 
-	tx = db.First(&models.Connection{}, "Src = ? AND Dst = ? AND Port = ?", srcHost.ID, dstHost.ID, portInt)
+	tx = db.First(&models.Connection{}, "Src = ? AND Dst = ? AND Port = ?", srcHost.IP, dstHost.IP, portInt)
 	if tx.Error == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Connection already exists"})
 		return
 	}
 
-	err = createConnection(db, srcHost.ID, dstHost.ID, portInt)
+	err = createConnection(db, srcHost.IP, dstHost.IP, portInt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+    for client := range clients {
+        err := client.WriteJSON(jsonData)
+        if err != nil {
+            fmt.Println(err)
+            client.Close()
+            delete(clients, client)
+        }
+    }
+
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
-
