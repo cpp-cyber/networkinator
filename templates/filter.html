@@ -2,6 +2,11 @@
 
 <body class="body-dark">
     <div class="md:flex flex-col md:flex-row md:min-h-screen w-full max-w-screen-xl mx-auto">
+        <div id="checkboxes" class="form-check form-check-inline">
+        </div>
+        <div> 
+            <button id="btn" class="btn btn-primary" onclick="filter()">Apply</button>
+        </div>
         <script src="./assets/js/go.js"></script>
         <div id="allSampleContent" class="p-4 w-full">
             <div id="sample">
@@ -10,6 +15,7 @@
                 </div>
             </div>
         </div>
+    </div>
 </body>
 
 <script>
@@ -30,7 +36,7 @@
         } else if (typeof data.IP !== 'undefined') {
             myDiagram.model.addNodeData({ key: data.IP, text: data.IP });
         } else {
-            console.log("Unknown message: ", data);
+            console.log("Unknown data: " + data);
         }
     };
 
@@ -52,6 +58,7 @@
 
     var nodeDataArray = [];
     var linkDataArray = [];
+    var ips = [];
     const highlightColor = "red";
     function init() {
         const $ = go.GraphObject.make;
@@ -135,6 +142,7 @@
                 ));
 
         GetConnections();
+        createCheckboxes();
         myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
     }
     window.addEventListener('DOMContentLoaded', init);
@@ -163,6 +171,76 @@
         };
         xhttp.open("GET", "http://localhost/api/connections", true);
         xhttp.send();
+    }
+
+    function createCheckboxes() {
+        var xhttp = new XMLHttpRequest();
+        var div = document.getElementById("checkboxes");
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+                var connections = JSON.parse(this.responseText);
+                var i = 1;
+                Object.keys(connections).forEach(key => {
+                    if (!ips.includes(connections[key][0])) {
+                        ips.push(connections[key][0]);
+                        createCheckbox(connections[key][0]);
+                    }
+                    if (!ips.includes(connections[key][1])) {
+                        ips.push(connections[key][1]);
+                        createCheckbox(connections[key][1]);
+                    }
+                    i++;
+                });
+            }
+        };
+        xhttp.open("GET", "http://localhost/api/connections", true);
+        xhttp.send();
+    }
+
+    function createCheckbox(ip) {
+        var div = document.getElementById("checkboxes");
+        var childDiv = document.createElement("div");
+        childDiv.className = "form-check form-check-inline";
+        var checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.name = ip;
+        checkbox.value = ip;
+        checkbox.className = "form-check-input form-check-inline";
+
+        var label = document.createElement('label')
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(ip));
+        label.className = "form-check-label";
+
+        childDiv.appendChild(label);
+        div.appendChild(childDiv);
+    }
+
+    function filter() {
+        var checklist = document.getElementById("checkboxes");
+        var checkboxes = checklist.getElementsByTagName("input");
+        var checked = [];
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].checked) {
+                checked.push(checkboxes[i].value);
+            }
+        }
+        myDiagram.commit(function (d) {
+            d.nodes.each(function (n) {
+                n.visible = false;
+            });
+            d.links.each(function (l) {
+                l.visible = false;
+            });
+
+            d.model.linkDataArray.forEach(function (p) {
+                if (checked.includes(p.from) || checked.includes(p.to)) {
+                    d.findNodeForKey(p.from).visible = true;
+                    d.findNodeForKey(p.to).visible = true;
+                    d.findLinkForData(p).visible = true;
+                }
+            });
+        }, "filter");
     }
 
     function highlightLink(link, show) {

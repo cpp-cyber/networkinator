@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func connectToSQLite() (*gorm.DB, error) {
+func ConnectToSQLite() (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open("network.db"), &gorm.Config{})
 	if err != nil {
 		return nil, err
@@ -16,20 +16,9 @@ func connectToSQLite() (*gorm.DB, error) {
 	return db, nil
 }
 
-func createHost(db *gorm.DB, ip string) error {
-	host := models.Host{IP: ip, ID: HostCount}
-	result := db.Create(&host)
-	if result.Error != nil {
-		return result.Error
-	}
-	HostCount++
-	return nil
-}
-
-func createConnection(db *gorm.DB, src, dst string, port int) error {
+func AddConnectionToDB(db *gorm.DB, src, dst string, port, count int) error {
 	id := uuid.New().String()
-
-	connection := models.Connection{ID: id, Src: src, Dst: dst, Port: port}
+	connection := models.Connection{ID: id, Src: src, Dst: dst, Port: port, Count: count}
 	result := db.Create(&connection)
 	if result.Error != nil {
 		return result.Error
@@ -37,20 +26,34 @@ func createConnection(db *gorm.DB, src, dst string, port int) error {
 	return nil
 }
 
-func getHostsEntries(db *gorm.DB) ([]models.Host, error) {
-	var hosts []models.Host
-	result := db.Find(&hosts)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return hosts, nil
-}
-
-func getConnections(db *gorm.DB) ([]models.Connection, error) {
+func GetAllConnections(db *gorm.DB) ([]models.Connection, error) {
 	var connections []models.Connection
 	result := db.Find(&connections)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return connections, nil
+}
+
+func GetConnectionsByIP(db *gorm.DB, host string) ([]models.Connection, error) {
+    var connections []models.Connection
+    result := db.Where("src = ? OR dst = ?", host, host).Find(&connections)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    return connections, nil
+}
+
+func IncrementConnectionCount(db *gorm.DB, id string) error {
+    var connection models.Connection
+    result := db.Where("id = ?", id).First(&connection)
+    if result.Error != nil {
+        return result.Error
+    }
+    connection.Count++
+    result = db.Save(&connection)
+    if result.Error != nil {
+        return result.Error
+    }
+    return nil
 }

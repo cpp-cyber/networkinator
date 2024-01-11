@@ -8,11 +8,6 @@ import (
     "github.com/gorilla/websocket"
 )
 
-type Message struct {
-    Host models.Host
-    Connection models.Connection
-}
-
 var HostCount int
 
 var clients = make(map[*websocket.Conn]bool)
@@ -27,12 +22,12 @@ func main() {
 	public := router.Group("/")
 	addPublicRoutes(public)
 
-	db, err := connectToSQLite()
+	db, err := ConnectToSQLite()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	err = db.AutoMigrate(&models.Host{}, &models.Connection{})
+	err = db.AutoMigrate(&models.Connection{})
 	if err != nil {
 		log.Fatalln(err)
 	}
