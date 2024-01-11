@@ -11,6 +11,9 @@ import (
 var HostCount int
 
 var clients = make(map[*websocket.Conn]bool)
+var agentStatusClients = make(map[*websocket.Conn]bool)
+var db = ConnectToSQLite()
+
 
 func main() {
 
@@ -22,12 +25,7 @@ func main() {
 	public := router.Group("/")
 	addPublicRoutes(public)
 
-	db, err := ConnectToSQLite()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	err = db.AutoMigrate(&models.Connection{})
+    err := db.AutoMigrate(&models.Connection{}, &models.Agent{})
 	if err != nil {
 		log.Fatalln(err)
 	}

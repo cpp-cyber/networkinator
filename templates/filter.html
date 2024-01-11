@@ -169,7 +169,7 @@
                 myDiagram.model = new go.GraphLinksModel(nodeDataArray, linkDataArray);
             }
         };
-        xhttp.open("GET", "http://localhost/api/connections", true);
+        xhttp.open("GET", "http://localhost/api/connections/get", true);
         xhttp.send();
     }
 
@@ -193,7 +193,7 @@
                 });
             }
         };
-        xhttp.open("GET", "http://localhost/api/connections", true);
+        xhttp.open("GET", "http://localhost/api/connections/get", true);
         xhttp.send();
     }
 

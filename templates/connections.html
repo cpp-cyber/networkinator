@@ -23,7 +23,7 @@
 
     function getConnections() {
         $.ajax({
-            url: "/api/connections",
+            url: "/api/connections/get",
             type: "GET",
             success: function (data) {
                 let dataArray = Object.keys(data).map(key => [key, data[key]]);
