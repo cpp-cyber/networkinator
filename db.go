@@ -3,7 +3,6 @@ package main
 import (
 	"networkinator/models"
 
-	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -16,8 +15,7 @@ func ConnectToSQLite() *gorm.DB {
     return db
 }
 
-func AddConnectionToDB(src, dst string, port, count int) error {
-	id := uuid.New().String()
+func AddConnectionToDB(id string, src, dst string, port int, count float64) error {
 	connection := models.Connection{ID: id, Src: src, Dst: dst, Port: port, Count: count}
 	result := db.Create(&connection)
 	if result.Error != nil {
@@ -44,13 +42,13 @@ func GetConnectionsByIP(host string) ([]models.Connection, error) {
     return connections, nil
 }
 
-func IncrementConnectionCount(id string) error {
+func UpdateConnectionCount(id string, count float64) error {
     var connection models.Connection
     result := db.Where("id = ?", id).First(&connection)
     if result.Error != nil {
         return result.Error
     }
-    connection.Count++
+    connection.Count = count
     result = db.Save(&connection)
     if result.Error != nil {
         return result.Error

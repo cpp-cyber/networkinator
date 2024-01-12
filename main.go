@@ -13,6 +13,7 @@ var HostCount int
 var clients = make(map[*websocket.Conn]bool)
 var agentStatusClients = make(map[*websocket.Conn]bool)
 var webStatusClients = make(map[*websocket.Conn]bool)
+var agentNewConnClients = make(map[*websocket.Conn]bool)
 var db = ConnectToSQLite()
 
 

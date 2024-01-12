@@ -21,7 +21,7 @@ func GetConnections(c *gin.Context) {
 
     connectionMap := make(map[string][]string)
     for _, connection := range connections {
-        connectionMap[connection.ID] = []string{connection.Src, connection.Dst, strconv.Itoa(connection.Port), strconv.Itoa(connection.Count)}
+        connectionMap[connection.ID] = []string{connection.Src, connection.Dst, strconv.Itoa(connection.Port), strconv.FormatFloat(connection.Count, 'f', -1, 64)}
     }
 
     c.JSON(http.StatusOK, connectionMap)
@@ -35,9 +35,18 @@ func AddConnection(input []byte) {
         return
     }
 
-	src := jsonData["Src"].(string)
-	dst := jsonData["Dst"].(string)
-	port := jsonData["Port"].(string)
+    fmt.Println(jsonData)
+
+    id := jsonData["ID"].(string)
+    src := jsonData["Src"].(string)
+    dst := jsonData["Dst"].(string)
+    port := jsonData["Port"].(string)
+    count := jsonData["Count"].(float64)
+
+    if src == "" {
+        UpdateConnectionCount(id, count)
+        return
+    }
 
 	portInt, err := strconv.Atoi(port)
 	if err != nil || portInt < 0 || portInt > 65535 {
@@ -46,13 +55,13 @@ func AddConnection(input []byte) {
 	}
 
     connection := models.Connection{}
-    tx := db.First(&connection, "Src = ? AND Dst = ? AND Port = ?", src, dst, portInt)
+    tx := db.First(&connection, "ID = ?", id)
 	if tx.Error == nil {
-        IncrementConnectionCount(connection.ID)
+        fmt.Println("Connection already exists")
 		return
 	}
 
-	err = AddConnectionToDB(src, dst, portInt, 1)
+	err = AddConnectionToDB(id, src, dst, portInt, 1)
 	if err != nil {
         fmt.Println(err)
 		return
