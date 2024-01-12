@@ -115,7 +115,7 @@ func AddAgent(c *gin.Context) {
 }
 
 func AgentStatus(input []byte) {
-    for client := range agentStatusClients {
+    for client := range webStatusClients {
         err := client.WriteMessage(websocket.TextMessage, input)
         if err != nil {
             fmt.Println(err)

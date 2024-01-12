@@ -1,6 +1,6 @@
 pipeline {
   agent {
-    label 'network-agent'
+    label 'network-agent-ubuntu22'
   }
 
   environment {

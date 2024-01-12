@@ -1,22 +1,24 @@
 {{ template "Header" }}
-
-<body class="body-dark">
-    <div class="md:flex flex-col md:flex-row md:min-h-screen w-full max-w-screen-xl mx-auto">
-        <div id="checkboxes" class="form-check form-check-inline">
-        </div>
-        <div> 
-            <button id="btn" class="btn btn-primary" onclick="filter()">Apply</button>
-        </div>
-        <script src="./assets/js/go.js"></script>
-        <div id="allSampleContent" class="p-4 w-full">
-            <div id="sample">
-                <div id="myDiagramDiv"
-                    style="background-color: #66737f; border: solid 0px black; width: 100%; height: 800px">
-                </div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-4" style="text-align:center">
+            <div id="checkboxes" class="form-check form-check-inline">
+            </div>
+            <div> 
+                <button id="btn" class="btn btn-primary" onclick="filter()">Apply</button>
             </div>
         </div>
     </div>
-</body>
+    <script src="./assets/js/go.js"></script>
+    <div id="allSampleContent" class="p-4 w-full">
+        <div id="sample">
+            <div id="myDiagramDiv"
+                style="background-color: #66737f; border: solid 0px black; width: 100%; height: 800px">
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     url = 'ws://localhost/ws';
@@ -200,7 +202,7 @@
     function createCheckbox(ip) {
         var div = document.getElementById("checkboxes");
         var childDiv = document.createElement("div");
-        childDiv.className = "form-check form-check-inline";
+        childDiv.className = "row form-check form-check-inline";
         var checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.name = ip;
@@ -250,3 +252,4 @@
     }
 
 </script>
+{{ template "Footer" }}
