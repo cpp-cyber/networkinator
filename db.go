@@ -65,20 +65,6 @@ func AddAgentToDB(ID string, hostname, hostOS, ip string) error {
     return nil
 }
 
-func UpdateAgentStatus(ip, status string) error {
-    var agent models.Agent
-    result := db.Where("IP = ?", ip).First(&agent)
-    if result.Error != nil {
-        return result.Error
-    }
-    agent.Status = status
-    result = db.Save(&agent)
-    if result.Error != nil {
-        return result.Error
-    }
-    return nil
-}
-
 func GetAllAgents() ([]models.Agent, error) {
     var agents []models.Agent
     result := db.Find(&agents)
