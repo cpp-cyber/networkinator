@@ -1,17 +1,22 @@
 {{ template "Header" }}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-4"></div>
-        <div class="col-md-4" style="text-align:center">
-            <div id="checkboxes" class="form-check form-check-inline">
-            </div>
-            <div> 
-                <button id="btn" class="btn btn-primary" onclick="filter()">Apply</button>
+<div class="container-fluid h-50 d-flex align-items-center justify-content-center">
+    <div class="row w-50 ">
+        <input type="text" id="search">
+        <div class="container-fluid h-50 d-flex align-items-center justify-content-center">
+            <div class="col-md-6" style="text-align:left">
+                <div class="form-check form-check-inline" style="height:10em; overflow-y:auto; align-items-center">
+                    <ul id="checkboxes" style="list-style:none ">
+                    </ul>
+                </div>
+                <div> 
+                    <button id="btn" class="btn btn-primary" onclick="filter()">Apply</button>
+                </div>
             </div>
         </div>
     </div>
-    {{ template "Topology" }}
 </div>
+
+{{ template "Topology" }}
 
 <script>
     $(document).ready(function () {
