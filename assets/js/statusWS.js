@@ -12,8 +12,11 @@ socket.onmessage = function(event) {
             AgentUp(data.ID);
         } else if (data.Status === "Dead") {
             AgentDown(data.ID);
-        } else {
-            console.log("Unknown status: ", data);
+        } else if (data.Output !== 'undefined') {
+            var output = data.Output;
+            if (output !== "") {
+                displayOutput(output);
+            }
         }
     } else {
         console.log("Unknown message: ", data);

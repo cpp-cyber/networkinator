@@ -13,6 +13,8 @@ var (
     HostCount int
     agentClients = make(map[*websocket.Conn]bool)
     webClients = make(map[*websocket.Conn]bool)
+    statusChan = make(chan string)
+    agentChan = make(chan string)
     db = ConnectToSQLite()
 
     tomlConf = &models.Config{}
@@ -30,7 +32,7 @@ func main() {
 
     log.SetOutput(f)
 
-    gin.SetMode(gin.ReleaseMode)
+ // gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/**/*")
 	router.MaxMultipartMemory = 8 << 20 // 8 MiB
@@ -45,10 +47,12 @@ func main() {
     private.Use(authRequired)
 	addPrivateRoutes(private)
 
-    err = db.AutoMigrate(&models.Connection{}, &models.Agent{})
+    err = db.AutoMigrate(&models.Agent{})
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+    go handleMsg()
 
     log.Fatalln(router.Run(":80"))
 }

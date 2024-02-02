@@ -55,14 +55,7 @@ func handleWebSocket(conn *websocket.Conn) {
             return
         }
 
-        switch jsonData["OpCode"].(float64) {
-        case 3:
-            id := jsonData["ID"].(string)
-            DeleteConnectionFromDB(id)
-        }
-
-        sendToAgents(msg)
-
+        agentChan <- string(msg)
     }
 }
 
@@ -80,14 +73,16 @@ func handleAgentSocket(conn *websocket.Conn) {
             }
 
             jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Status": "Dead"}`, deadAgent.ID))
-            for client := range webClients {
-                client.WriteMessage(websocket.TextMessage, jsonData)
-            }
+            statusChan <- string(jsonData)
 
             conn.Close()
             delete(agentClients, conn)
             break
         }
+
+        stringMsg := string(msg)
+
+        fmt.Println(stringMsg)
 
         jsonData := make(map[string]interface{})
         err = json.Unmarshal(msg, &jsonData)
@@ -99,15 +94,43 @@ func handleAgentSocket(conn *websocket.Conn) {
         switch jsonData["OpCode"].(float64) {
         case 0:
             jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Status": "Alive"}`, strconv.FormatFloat(jsonData["ID"].(float64), 'f', -1, 64)))
-            AgentStatus(jsonData)
-        case 5:
-            AddConnection(jsonData)
-        case 6:
-            id := jsonData["ID"].(string)
-            count := jsonData["Count"].(float64)
-            UpdateConnectionCount(id, count)
+            statusChan <- string(jsonData)
+        case 1:
+            output := jsonData["Output"].(string)
+            output = strings.ReplaceAll(output, `\`, `\\`)
+            jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Output": "%s"}`, strconv.FormatFloat(jsonData["ID"].(float64), 'f', -1, 64), output))
+            statusChan <- string(jsonData)
         default:
             log.Println("Unknown OpCode")
+        }
+    }
+}
+
+func handleMsg() {
+    for {
+        select {
+        case msg := <-statusChan:
+            for client := range webClients {
+                fmt.Println("Sending to web")
+                fmt.Println(msg)
+                client.WriteMessage(websocket.TextMessage, []byte(msg))
+            }
+        case msg := <-agentChan:
+            jsonData := make(map[string]interface{})
+            err := json.Unmarshal([]byte(msg), &jsonData)
+            if err != nil {
+                log.Println(err)
+                return
+            }
+            ip := jsonData["IP"].(string)
+            for client := range agentClients {
+                clientIP := strings.Split(client.NetConn().RemoteAddr().String(), ":")[0]
+                if ip == clientIP {
+                    fmt.Println("Sending to agent")
+                    fmt.Println(msg)
+                    client.WriteMessage(websocket.TextMessage, []byte(msg))
+                }
+            }
         }
     }
 }

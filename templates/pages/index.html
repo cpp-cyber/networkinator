@@ -1,8 +1,111 @@
 {{ template "Header" }}
 
-<div class="md:flex flex-col md:flex-row md:min-h-screen w-full max-w-screen-xl mx-auto">
-    {{ template "Topology" }}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h1 class="text-center">IT Dashboard</h1>
+        </div>
+    </div>
 </div>
 
-<script src="./assets/js/topologyWS.js"></script>
+<div class="container-fluid">
+    <div class="row">
+        <div id="agents" class="h-100 d-flex align-items-center justify-content-center row">
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="cmdModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalTitle"></h5>
+      </div>
+      <div class="modal-body" id="terminal">
+          <div id="termOutput"></div>
+          <input type="text" class="form-control" id="cmdContent" placeholder="Enter command to send to agent">
+          <button class="btn btn-primary" id="cmdSubmit" type="button">Send</button>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onClick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./assets/js/statusWS.js"></script>
+<script>
+    $(document).ready(function () {
+        GetAgents();
+    });
+
+    $('#cmdModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var hostname = button.data('hostname');
+        var modal = $(this);
+        modal.find('.modal-title').text('Send Command to ' + hostname);
+        var ip = button.data('ip');
+        modal.find('#cmdSubmit').attr("onClick", "SendCmd('" + ip + "')");
+    });
+
+    function GetAgents() {
+        $.ajax({
+            url: "/api/agents/get",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                for (var i = 0; i < data.length; i++) {
+                    if (document.getElementById(data[i][3]) === null) {
+                        AddAgentCard(data[i][0], data[i][1], data[i][2], data[i][3]);
+                    }
+                }
+            },
+            error: function (xhr, status, error) {
+                console.log("Error: " + error);
+            },
+        });
+    }
+
+    function AddAgentCard(hostname, os, ip, id) {
+        var card = '<div class="col-md-4" style="max-width: 18rem;">' +
+            '<div id="' + id + '" class="card text-bg-danger mb-3 col" style="max-width: 18rem;">' +
+            '<div class="card-header">' + os + '</div>' +
+            '<div class="card-body">' +
+            '<h5 class="card-title">' + hostname + '</h5>' +
+            '<p class="card-text">' + ip + '</p>' +
+            '<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cmdModal" data-hostname="' + hostname + '" data-ip="' + ip + '">Send Command</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+        $("#agents").append(card);
+    }
+
+    function AgentDown(id) {
+        document.getElementById(id).classList.remove("text-bg-success");
+        document.getElementById(id).classList.add("text-bg-danger");
+    }
+
+    function AgentUp(id) {
+        document.getElementById(id).classList.remove("text-bg-danger");
+        document.getElementById(id).classList.add("text-bg-success");
+    }
+
+    function closeModal() {
+        $(".modal").modal("hide");
+    }
+
+    function SendCmd(ip) {
+        var cmd = document.getElementById("cmdContent").value;
+        if (cmd != null) {
+            socket.send(JSON.stringify({ "cmd": cmd, "IP": ip }));
+        }
+    }
+
+    function displayOutput(data) {
+        console.log(data);
+        data = data.replace(/\\r\\n/g, "<br>");
+        document.getElementById("termOutput").innerHTML = data;
+    }
+
+</script>
 {{ template "Footer" }}

@@ -39,7 +39,7 @@ func basicAuth(c *gin.Context) {
             c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save session."})
             return
         }        
-        c.Redirect(http.StatusSeeOther, "/topology")
+        c.Redirect(http.StatusSeeOther, "/home")
     } else { 
         c.Header("WWW-Authenticate", "Basic realm=Restricted")
         c.AbortWithStatus(http.StatusUnauthorized)

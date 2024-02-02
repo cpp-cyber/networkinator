@@ -14,7 +14,6 @@ var (
 type Config struct {
     AdminUsername string
     AdminPassword string
-    AgentKey string
 }
 
 func ReadConfig(conf *Config, configPath string) {
