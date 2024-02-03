@@ -5,6 +5,7 @@ import (
 	"log"
     "os"
 
+	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
 )
@@ -15,7 +16,7 @@ var (
     webClients = make(map[*websocket.Conn]bool)
     statusChan = make(chan string)
     agentChan = make(chan string)
-    db = ConnectToSQLite()
+    db = &gorm.DB{}
 
     tomlConf = &models.Config{}
     configPath = "config.conf"
@@ -23,6 +24,7 @@ var (
 
 func main() {
     models.ReadConfig(tomlConf, configPath)
+    db = ConnectToDB()
 
     f, err := os.OpenFile("server.txt", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
     if err != nil {

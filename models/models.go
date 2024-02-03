@@ -5,5 +5,4 @@ type Agent struct {
     Hostname string
     HostOS   string
     IP       string
-    Status   string
 }

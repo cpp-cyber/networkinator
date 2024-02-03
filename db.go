@@ -3,12 +3,12 @@ package main
 import (
 	"networkinator/models"
 
-	"gorm.io/driver/sqlite"
+    "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func ConnectToSQLite() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("network.db"), &gorm.Config{})
+func ConnectToDB() *gorm.DB {
+	db, err := gorm.Open(mysql.Open(tomlConf.DBConnectURL), &gorm.Config{})
 	if err != nil {
         panic(err)
 	}
@@ -16,7 +16,7 @@ func ConnectToSQLite() *gorm.DB {
 }
 
 func AddAgentToDB(ID string, hostname, hostOS, ip string) error {
-    agent := models.Agent{ID: ID, Hostname: hostname, HostOS: hostOS, IP: ip, Status: "Alive"}
+    agent := models.Agent{ID: ID, Hostname: hostname, HostOS: hostOS, IP: ip}
     result := db.Create(&agent)
     if result.Error != nil {
         return result.Error

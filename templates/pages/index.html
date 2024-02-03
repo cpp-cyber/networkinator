@@ -3,14 +3,14 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-12">
-            <h1 class="text-center">IT Dashboard</h1>
+            <h1 class="text-center">Gump Central</h1>
         </div>
     </div>
 </div>
 
 <div class="container-fluid">
     <div class="row">
-        <div id="agents" class="h-100 d-flex align-items-center justify-content-center row">
+        <div id="agents" class="h-100 d-flex align-items-center justify-content-center">
         </div>
     </div>
 </div>
@@ -40,12 +40,22 @@
     });
 
     $('#cmdModal').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget);
-        var hostname = button.data('hostname');
-        var modal = $(this);
+        let button = $(event.relatedTarget);
+        let hostname = button.data('hostname');
+        let modal = $(this);
+        let output = document.getElementById("termOutput");
+        output.innerHTML = "";
         modal.find('.modal-title').text('Send Command to ' + hostname);
-        var ip = button.data('ip');
+        let ip = button.data('ip');
         modal.find('#cmdSubmit').attr("onClick", "SendCmd('" + ip + "')");
+    });
+
+    var cmdButton = document.getElementById("cmdContent");
+    cmdButton.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            let ip = document.getElementById("cmdSubmit").getAttribute("onClick").split("'")[1];
+            SendCmd(ip);
+        }
     });
 
     function GetAgents() {
@@ -95,16 +105,21 @@
     }
 
     function SendCmd(ip) {
-        var cmd = document.getElementById("cmdContent").value;
+        let cmd = document.getElementById("cmdContent").value;
         if (cmd != null) {
             socket.send(JSON.stringify({ "cmd": cmd, "IP": ip }));
         }
     }
 
     function displayOutput(data) {
-        console.log(data);
-        data = data.replace(/\\r\\n/g, "<br>");
-        document.getElementById("termOutput").innerHTML = data;
+        data = data.replace(/\\n/g, "<br>");
+        let child = document.createElement("div");
+        let parent = document.getElementById("termOutput");
+        if (parent.childNodes.length == 3) {
+            parent.removeChild(parent.childNodes[0]);
+        }
+        child.innerHTML = data;
+        parent.appendChild(child);
     }
 
 </script>

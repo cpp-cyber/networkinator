@@ -14,6 +14,7 @@ var (
 type Config struct {
     AdminUsername string
     AdminPassword string
+    DBConnectURL  string
 }
 
 func ReadConfig(conf *Config, configPath string) {

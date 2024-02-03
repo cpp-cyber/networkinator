@@ -80,10 +80,6 @@ func handleAgentSocket(conn *websocket.Conn) {
             break
         }
 
-        stringMsg := string(msg)
-
-        fmt.Println(stringMsg)
-
         jsonData := make(map[string]interface{})
         err = json.Unmarshal(msg, &jsonData)
         if err != nil {
@@ -111,8 +107,6 @@ func handleMsg() {
         select {
         case msg := <-statusChan:
             for client := range webClients {
-                fmt.Println("Sending to web")
-                fmt.Println(msg)
                 client.WriteMessage(websocket.TextMessage, []byte(msg))
             }
         case msg := <-agentChan:
@@ -126,8 +120,6 @@ func handleMsg() {
             for client := range agentClients {
                 clientIP := strings.Split(client.NetConn().RemoteAddr().String(), ":")[0]
                 if ip == clientIP {
-                    fmt.Println("Sending to agent")
-                    fmt.Println(msg)
                     client.WriteMessage(websocket.TextMessage, []byte(msg))
                 }
             }
