@@ -12,8 +12,6 @@ var (
 )
 
 type Config struct {
-    AdminUsername string
-    AdminPassword string
     DBConnectURL  string
 }
 

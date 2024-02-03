@@ -40,14 +40,8 @@ func main() {
 	router.MaxMultipartMemory = 8 << 20 // 8 MiB
 	router.Static("/assets", "./assets/")
 
-    initCookies(router)
-
 	public := router.Group("/")
 	addPublicRoutes(public)
-
-    private := router.Group("/")
-    private.Use(authRequired)
-	addPrivateRoutes(private)
 
     err = db.AutoMigrate(&models.Agent{})
 	if err != nil {
