@@ -55,7 +55,13 @@ func handleWebSocket(conn *websocket.Conn) {
             return
         }
 
-        agentChan <- string(msg)
+        switch jsonData["OpCode"].(float64) {
+        case 3:
+            id := jsonData["ID"].(string)
+            DeleteConnectionFromDB(id)
+        }
+
+        agentChan <- jsonData
     }
 }
 
@@ -73,7 +79,9 @@ func handleAgentSocket(conn *websocket.Conn) {
             }
 
             jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Status": "Dead"}`, deadAgent.ID))
-            statusChan <- string(jsonData)
+            for client := range webClients {
+                client.WriteMessage(websocket.TextMessage, jsonData)
+            }
 
             conn.Close()
             delete(agentClients, conn)
@@ -89,13 +97,11 @@ func handleAgentSocket(conn *websocket.Conn) {
 
         switch jsonData["OpCode"].(float64) {
         case 0:
-            jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Status": "Alive"}`, strconv.FormatFloat(jsonData["ID"].(float64), 'f', -1, 64)))
-            statusChan <- string(jsonData)
-        case 1:
-            output := jsonData["Output"].(string)
-            output = strings.ReplaceAll(output, `\`, `\\`)
-            jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Output": "%s"}`, strconv.FormatFloat(jsonData["ID"].(float64), 'f', -1, 64), output))
-            statusChan <- string(jsonData)
+            statusChan <- jsonData
+        case 5:
+            connChan <- jsonData
+        case 6:
+            connChan <- jsonData
         default:
             log.Println("Unknown OpCode")
         }
@@ -106,23 +112,25 @@ func handleMsg() {
     for {
         select {
         case msg := <-statusChan:
+            jsonData := []byte(fmt.Sprintf(`{"ID": "%s", "Status": "Alive"}`, strconv.FormatFloat(msg["ID"].(float64), 'f', -1, 64)))
             for client := range webClients {
-                client.WriteMessage(websocket.TextMessage, []byte(msg))
+                client.WriteMessage(websocket.TextMessage, jsonData)
             }
         case msg := <-agentChan:
-            jsonData := make(map[string]interface{})
-            err := json.Unmarshal([]byte(msg), &jsonData)
+            jsonData, err := json.Marshal(msg)
             if err != nil {
                 log.Println(err)
                 return
             }
-            ip := jsonData["IP"].(string)
-            for client := range agentClients {
-                clientIP := strings.Split(client.NetConn().RemoteAddr().String(), ":")[0]
-                if ip == clientIP {
-                    client.WriteMessage(websocket.TextMessage, []byte(msg))
-                }
+            sendToAgents(jsonData)
+        case msg := <-connChan:
+            if msg["OpCode"].(float64) == 5 {
+                AddConnection(msg)
+            } else if msg["OpCode"].(float64) == 6 {
+                id := msg["ID"].(string)
+                count := msg["Count"].(float64)
+                UpdateConnectionCount(id, count)
             }
         }
     }
-}
+}   

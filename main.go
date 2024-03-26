@@ -5,7 +5,6 @@ import (
 	"log"
     "os"
 
-	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
     "github.com/gorilla/websocket"
 )
@@ -14,9 +13,10 @@ var (
     HostCount int
     agentClients = make(map[*websocket.Conn]bool)
     webClients = make(map[*websocket.Conn]bool)
-    statusChan = make(chan string)
-    agentChan = make(chan string)
-    db = &gorm.DB{}
+    statusChan = make(chan map[string]interface{})
+    agentChan = make(chan map[string]interface{})
+    connChan = make(chan map[string]interface{})
+    db = ConnectToSQLite()
 
     tomlConf = &models.Config{}
     configPath = "config.conf"
@@ -24,7 +24,6 @@ var (
 
 func main() {
     models.ReadConfig(tomlConf, configPath)
-    db = ConnectToDB()
 
     f, err := os.OpenFile("server.txt", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
     if err != nil {
@@ -34,16 +33,22 @@ func main() {
 
     log.SetOutput(f)
 
- // gin.SetMode(gin.ReleaseMode)
+    gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/**/*")
 	router.MaxMultipartMemory = 8 << 20 // 8 MiB
 	router.Static("/assets", "./assets/")
 
+    initCookies(router)
+
 	public := router.Group("/")
 	addPublicRoutes(public)
 
-    err = db.AutoMigrate(&models.Agent{})
+    private := router.Group("/")
+    private.Use(authRequired)
+	addPrivateRoutes(private)
+
+    err = db.AutoMigrate(&models.Connection{}, &models.Agent{})
 	if err != nil {
 		log.Fatalln(err)
 	}
